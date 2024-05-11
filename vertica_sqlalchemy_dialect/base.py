@@ -887,11 +887,11 @@ class VerticaDialect(default.DefaultDialect):
         
         columns = []
         for row in connection.execute(s):
-            name = row.column_name
-            dtype = row.data_type.lower()
-            default = row.column_default
-            nullable = row.is_nullable
-            table_name = row.table_name.lower()
+            name = row[0]
+            dtype = row[1].lower()
+            default = row[2]
+            nullable = row[3]
+            table_name = row[4].lower()
             column_info = self._get_column_info(
                 name, dtype, default, nullable, table_name, schema
             )
@@ -1125,8 +1125,8 @@ class VerticaDialect(default.DefaultDialect):
         pk_columns = []
 
         for row in connection.execute(spk):
-            columns = row["column_name"]
-            table_name = row["table_name"].lower()
+            columns = row[0]
+            table_name = row[1].lower()
             pk_columns.append(
                 {
                     "constrained_columns": [columns],
@@ -1860,10 +1860,10 @@ class VerticaDialect(default.DefaultDialect):
         owner_info = []
         for row in connection.execute(sct):
             owner_info.append(
-                {"table_name": row.table_name, "owner_name": row.owner_name}
+                {"table_name": row[0], "owner_name": row[1]}
             )
 
-            # owner_info = row["owner_name"]
+            # owner_info = row[1]
 
         return owner_info
 
@@ -1898,11 +1898,11 @@ class VerticaDialect(default.DefaultDialect):
         columns = []
 
         for row in connection.execute(s):
-            name = row.column_name
-            dtype = row.data_type.lower()
-            default = row.column_default
-            nullable = row.is_nullable
-            table_name = row.table_name.lower()
+            name = row[0]
+            dtype = row[1].lower()
+            default = row[2]
+            nullable = row[3]
+            table_name = row[4].lower()
 
             column_info = self._get_column_info(
                 name, dtype, default, nullable,table_name, schema
@@ -1987,10 +1987,10 @@ class VerticaDialect(default.DefaultDialect):
         owner_info = []
         for row in connection.execute(sct):
             owner_info.append(
-                {"table_name": row.table_name, "owner_name": row.owner_name}
+                {"table_name": row[0], "owner_name": row[1]}
             )
 
-            # owner_info = row["owner_name"]
+            # owner_info = row[1]
 
         return owner_info
     
@@ -2103,11 +2103,11 @@ class VerticaDialect(default.DefaultDialect):
         columns = []
 
         for row in connection.execute(s):
-            name = row.projection_column_name
-            dtype = row.data_type.lower()
-            default = row.column_default
-            nullable = row.is_nullable
-            tablename = row.projection_name.lower()
+            name = row[0]
+            dtype = row[1].lower()
+            default = row[2]
+            nullable = row[3]
+            tablename = row[4].lower()
 
             column_info = self._get_column_info(
                 name, dtype, default, nullable,  tablename, schema,
