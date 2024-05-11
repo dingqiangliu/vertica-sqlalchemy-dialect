@@ -514,6 +514,9 @@ class VerticaDialect(default.DefaultDialect):
             logging.warning(f"{database}", f"unable to get extra_properties : {ex}")
 
     def _get_schema_properties(self, connection, schema):
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
+
         try:
             # Projection count
             projection_count_query = sql.text(
@@ -602,7 +605,8 @@ class VerticaDialect(default.DefaultDialect):
     
     @lru_cache(maxsize=None)
     def fetch_table_properties(self,connection, schema):
-        
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
 
         sct = sql.text(
             dedent(
@@ -727,21 +731,17 @@ class VerticaDialect(default.DefaultDialect):
         return table_oid
 
     def get_projection_names(self, connection, schema=None, **kw):
-        if schema is not None:
-            schema_condition = "lower(projection_schema) = '%(schema)s'" % {
-                "schema": schema.lower()
-            }
-        else:
-            schema_condition = "1"
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
 
         get_projection_sql = sql.text(
             dedent(
                 """
             SELECT projection_name
             from v_catalog.projections
-            WHERE %(schema_condition)s
+            WHERE lower(projection_schema) = '%(schema)s'
             """
-                % {"schema_condition": schema_condition}
+                % {"schema": schema.lower()}
             )
         )
 
@@ -751,22 +751,18 @@ class VerticaDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_table_names(self, connection, schema=None, **kw):
-        if schema is not None:
-            schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                "schema": schema.lower()
-            }
-        else:
-            schema_condition = "1"
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
 
         get_tables_sql = sql.text(
             dedent(
                 """
             SELECT table_name
             FROM v_catalog.tables
-            WHERE %(schema_condition)s
+            WHERE lower(table_schema) = '%(schema)s'
             ORDER BY table_schema, table_name
         """
-                % {"schema_condition": schema_condition}
+                % {"schema": schema.lower()}
             )
         )
 
@@ -781,6 +777,7 @@ class VerticaDialect(default.DefaultDialect):
             }
         else:
             schema_condition = "1"
+
 
         get_tables_sql = sql.text(
             dedent(
@@ -800,22 +797,18 @@ class VerticaDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_view_names(self, connection, schema=None, **kw):
-        if schema is not None:
-            schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                "schema": schema.lower()
-            }
-        else:
-            schema_condition = "1"
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
 
         get_views_sql = sql.text(
             dedent(
                 """
             SELECT table_name
             FROM v_catalog.views
-            WHERE %(schema_condition)s
+            WHERE lower(table_schema) = '%(schema)s'
             ORDER BY table_schema, table_name
         """
-                % {"schema_condition": schema_condition}
+                % {"schema": schema.lower()}
             )
         )
 
@@ -824,12 +817,8 @@ class VerticaDialect(default.DefaultDialect):
     
     @lru_cache(maxsize=None)
     def fetch_view_definitions(self, connection,schema):
-        if schema is not None:
-            schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                "schema": schema.lower()
-            }
-        else:
-            schema_condition = "1"
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
             
         definition = []
             
@@ -854,13 +843,6 @@ class VerticaDialect(default.DefaultDialect):
         
 
     def get_view_definition(self, connection, view_name, schema=None, **kw):
-        if schema is not None:
-            schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                "schema": schema.lower()
-            }
-        else:
-            schema_condition = "1"
-            
         view_def = self.fetch_view_definitions(connection,schema)
         
         def_info = [
@@ -882,6 +864,9 @@ class VerticaDialect(default.DefaultDialect):
 
     @lru_cache(maxsize=None)
     def fetch_table_columns(self, connection, schema):
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
+
         s = sql.text(
             dedent(
                 """
@@ -1086,6 +1071,9 @@ class VerticaDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_models_names(self, connection, schema=None, **kw):
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
+
         get_models_sql = sql.text(
             dedent(
                 """
@@ -1119,12 +1107,8 @@ class VerticaDialect(default.DefaultDialect):
 
     @lru_cache(maxsize=None)
     def fetch_pk_constraint(self, connection, schema):
-        if schema is not None:
-            schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                "schema": schema.lower()
-            }
-        else:
-            schema_condition = "1"
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
 
         spk = sql.text(
             dedent(
@@ -1171,23 +1155,20 @@ class VerticaDialect(default.DefaultDialect):
     def _get_extra_tags(
         self, connection, name, schema=None
     ) -> Optional[Dict[str, str]]:
-        if schema is not None:
-            schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                "schema": schema.lower()
-            }
-        else:
-            schema_condition = "1"
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
 
         owner_res = None
         if name == "table":
+
             table_owner_command = sql.text(
                 dedent(
                     """
                 SELECT table_name, owner_name
                 FROM v_catalog.tables
-                WHERE %(schema_condition)s
+                WHERE lower(table_schema) = '%(schema)s'
                 """
-                    % {"schema_condition": schema_condition}
+                    % {"schema": schema.lower()}
                 )
             )
 
@@ -1212,9 +1193,9 @@ class VerticaDialect(default.DefaultDialect):
                     """
                 SELECT table_name, owner_name
                 FROM v_catalog.views
-                WHERE %(schema_condition)s
+                WHERE lower(table_schema) = '%(schema)s'
                 """
-                    % {"schema_condition": schema_condition}
+                    % {"schema": schema.lower()}
                 )
             )
             owner_res = connection.execute(table_owner_command)
@@ -1687,12 +1668,8 @@ class VerticaDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_model_comment(self, connection, model_name, schema=None, **kw):
-        if schema is not None:
-            schema_condition = "lower(schema_name) = '%(schema)s'" % {
-                "schema": schema.lower()
-            }
-        else:
-            schema_condition = "1"
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
 
         model_used_by = sql.text(
             dedent(
@@ -1855,12 +1832,6 @@ class VerticaDialect(default.DefaultDialect):
     
     @reflection.cache
     def get_columns(self, connection, table_name, schema=None, **kw):
-        if schema is not None:
-            schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                'schema': schema.lower()}
-        else:
-            schema_condition = "1"
-            
         columns = self.fetch_table_columns(connection, schema)
         
         table_columns = [
@@ -1872,12 +1843,8 @@ class VerticaDialect(default.DefaultDialect):
 
     @lru_cache(maxsize=None)
     def fetch_table_owner(self, connection, schema):
-        if schema is not None:
-            schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                "schema": schema.lower()
-            }
-        else:
-            schema_condition = "1"
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
 
         sct = sql.text(
             dedent(
@@ -1914,6 +1881,9 @@ class VerticaDialect(default.DefaultDialect):
 
     @lru_cache(maxsize=None)
     def fetch_view_columns(self, connection, schema):
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
+
         s = sql.text(
             dedent(
                 """
@@ -1956,12 +1926,8 @@ class VerticaDialect(default.DefaultDialect):
     
     @lru_cache(maxsize=None)
     def fetch_view_comment(self, connection, schema):
-        if schema is not None:
-            schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                "schema": schema.lower()
-            }
-        else:
-            schema_condition = "1"
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
 
         sct = sql.text(
             dedent(
@@ -2004,12 +1970,8 @@ class VerticaDialect(default.DefaultDialect):
 
     @lru_cache(maxsize=None)
     def fetch_view_owner(self, connection, schema):
-        if schema is not None:
-            schema_condition = "lower(table_schema) = '%(schema)s'" % {
-                "schema": schema.lower()
-            }
-        else:
-            schema_condition = "1"
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
 
         sct = sql.text(
             dedent(
@@ -2124,6 +2086,9 @@ class VerticaDialect(default.DefaultDialect):
 
     @lru_cache(maxsize = None)
     def fetch_projection_columns(self,connection, schema):
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
+
         s = sql.text(
             dedent(
                 """
@@ -2165,6 +2130,9 @@ class VerticaDialect(default.DefaultDialect):
         
     @lru_cache(maxsize=None)
     def fetch_projection_owner(self,connection,schema):
+        if schema is None:
+            schema = self._get_default_schema_name(connection)
+
         projection_owner_command = sql.text(
             dedent(
                 """
