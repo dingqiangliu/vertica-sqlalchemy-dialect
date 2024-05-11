@@ -365,10 +365,10 @@ class VerticaDialect(default.DefaultDialect):
         super().initialize(connection)
 
     def _get_default_schema_name(self, connection):
-        return connection.scalar("SELECT current_schema()")
+        return connection.scalar(sql.text("SELECT current_schema()"))
 
     def _get_server_version_info(self, connection):
-        v = connection.scalar("SELECT version()")
+        v = connection.scalar(sql.text("SELECT version()"))
         m = re.match(r".*Vertica Analytic Database v(\d+)\.(\d+)\.(\d)+.*", v)
         if not m:
             raise AssertionError(
@@ -378,7 +378,7 @@ class VerticaDialect(default.DefaultDialect):
 
     # noinspection PyRedeclaration
     def _get_default_schema_name(self, connection):
-        return connection.scalar("SELECT current_schema()")
+        return connection.scalar(sql.text("SELECT current_schema()"))
 
     def create_connect_args(self, url):
         opts = url.translate_connect_args(username="user")
